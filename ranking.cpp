@@ -8,8 +8,8 @@ using namespace std;
 ranking::ranking (int rozmiar)
 {
   ifstream dane;
-  //dane.open ("projekt2_dane.csv");
-  dane.open ("test.csv");
+  dane.open ("projekt2_dane.csv"); // DO KOMPILOWANIA PLIKU main.cpp
+  // dane.open ("test.csv"); // DO KOMPILOWANIA PLIKU test.cpp
 
   //konstruowanie
   this->ROZM = rozmiar;
@@ -116,7 +116,7 @@ int ranking::podzial (int p, int r) // Wywolywane w funkcji sortowanie_szybkie. 
       i++;
       j--;
     }
-    else // gdy i >= j zwracamy j jako punkt podzialu tablicy
+    else // gdy i >= j zwraca j jako oś podziału tablicy
       return j;  
  }
 }
@@ -127,20 +127,20 @@ void ranking::sortowanie_szybkie (int p, int r) // sortowanie szybkie
   if (p < r) 
   {	
     q = podzial (p, r); // dziele tablice na dwie czesci, gdzie q to punkt podzialu
-    sortowanie_szybkie (p, q); // rekurencyjnie quicksort dla pierwszej czesci tablicy
-    sortowanie_szybkie (q+1, r); // rekurencyjnie quicksort dla drugiej czesci tablicy
+    sortowanie_szybkie (p, q); // rekurencyjnie quicksort dla pierwszej (lewej) czesci tablicy
+    sortowanie_szybkie (q+1, r); // rekurencyjnie quicksort dla drugiej (prawej) czesci tablicy
   }
 }
 
 void ranking::scal (int poczatek, int srodek, int koniec)
 {
   // TABLICE POMOCNICZE
-  int *ocena_pom = new int[koniec-poczatek+1]; 
-  string *tytul_pom = new string[koniec-poczatek+1];
+  int *ocena_pom = new int [koniec-poczatek+1]; 
+  string *tytul_pom = new string [koniec-poczatek+1];
   // LICZNIKI ELEMENTÓW lewo(i) i prawo(j) tablicy oryginalnej, oraz licznik elementów tablicy pomocniczej(k)
   int i = poczatek, j = srodek+1, k = 0; 
  
-  while (i <= srodek && j <= koniec) // jeżeli znajdujemy się w pierwszej części tablicy zaznaczono obrazowo klamerkami: <---{------|------}--->
+  while (i <= srodek && j <= koniec) // jeżeli znajdujemy się w pierwszej części tablicy zaznaczono obrazowo klamerkami
   {
     if (this->OCENA[j] < this->OCENA[i]) // jeżeli ocena końcowa < ocena początkowa to ocena końcowa podpisywana jest na kolejne pole początkowe tablicy pomocniczej
     {
@@ -172,13 +172,17 @@ void ranking::scal (int poczatek, int srodek, int koniec)
       tytul_pom[k] = this->TYTUL[j++];
       k++;
     }
-}
+  }
  
   for (i = 0; i <= koniec-poczatek; i++) // podpisanie wartości elem. tab pomocniczych pod oryginalne zmienne
   {
     this->OCENA[poczatek+i] = ocena_pom[i]; 
     this->TYTUL[poczatek+i] = tytul_pom[i];
   }
+
+  // Zwalnianie pamieci
+  delete [] ocena_pom;
+  delete [] tytul_pom;
 }
  
 void ranking::sortowanie_scalanie (int poczatek, int koniec)
@@ -193,53 +197,49 @@ void ranking::sortowanie_scalanie (int poczatek, int koniec)
   }
 }
 
-void ranking::sortowanie_kubelkowe () // sypie program
+void ranking::sortowanie_kubelkowe () 
 { 
-	int* buckets = new int [10];
-  int* buckets_kopia = new int [10];
+	int* kubelki = new int [10];
+  int* kubelki_kopia = new int [10];
 	
-	for (int x=0; x<10; x++)
-  {
-    buckets [x] = 0;
-  }
+	for (int i=0; i<10; i++) // ZERUJE KUBEŁKI
+    kubelki [i] = 0;
  
-	for (int x=0; x<this->ROZM; x++)
-  {
-    buckets [this->OCENA[x]-1]++;
-  }
-  
-  for (int x=0; x<10; x++)
-  {
-    buckets [x] = buckets_kopia[x];
-  }
+	for (int i=0; i<this->ROZM; i++) // LECI PRZEZ CAŁY PLIK I DODAJE DO KUBEŁKA 
+    kubelki [this->OCENA[i]-1]++;
 
-  string ** pomoc = new string *[10];
-  for (int x=0; x<10; x++)
-  {
-    pomoc [x] = new string [buckets[x]];
-  }
+  string ** pomoc = new string *[10]; // TWORZY DWUWYMIAROWĄ DYNAMICZNA TABLICE STRING 
+  for (int i=0; i<10; i++)
+    pomoc [i] = new string [kubelki[i]];
+
+  for (int i=0; i<10; i++) // KOPIUJE ILOŚĆ LICZB W KUBEŁKACH
+    kubelki_kopia[i] = kubelki[i];
   
-  for (int x=0; x<this->ROZM; x++)
+  for (int i=0; i<this->ROZM && kubelki_kopia[this->OCENA[i]-1]>0; i++) // PRZYPISUJE TYTUŁY DO DANEJ OCENY w tabeli pomocniczej: pomoc[OCENA][INDEKS]
 	{
-    pomoc[this->OCENA[x]-1][buckets_kopia[x]] = this->TYTUL[x];
-    buckets_kopia[x]--;
+    pomoc [this->OCENA[i]-1] [kubelki_kopia[this->OCENA[i]-1]-1] = this->TYTUL[i];
+    kubelki_kopia[this->OCENA[i]-1]--; // Przechodzi na poprzedni rekord (wypełniam tablicę od końca)
 	}
-  for (int x=0; x<10; x++)
-  {
-    buckets [x] = buckets_kopia[x];
-  }
+
+  for (int i=0; i<10; i++) // KOPIUJE ILOŚĆ LICZB W KUBEŁKACH
+    kubelki_kopia[i] = kubelki[i];
 
   int ostatni_licznik=0;
-
-  for (int x=0; x <10; x++)
+  for (int i=0; i<10; i++) // PODPISUJE WARTOŚCI DO POSZCZEGÓLNYCH REKORDÓW
   {
-    int y;
-    for (y = ostatni_licznik; y < buckets[x] + ostatni_licznik; y++)
+    int j;
+    for (j = ostatni_licznik; j < kubelki[i] + ostatni_licznik && kubelki_kopia[i]>0; j++)
     {
-      this->OCENA[y] = x + 1;
-      this->TYTUL[y] = pomoc[x][buckets_kopia[x]];
-      buckets_kopia[x]--;
+      this->OCENA[j] = i + 1;
+      this->TYTUL[j] = pomoc[i][kubelki_kopia[i]-1]; 
+      kubelki_kopia[i]--; // Przechodzi na poprzedni rekord (podpisuję najpierw końcowe wartości, czyli tak naprawdę te pierwsze, bo wypełniałem tablicę pomoc[][] od końca)
     }
-    ostatni_licznik = y;
+    ostatni_licznik = j;
   }
+
+  for (int i = 0; i <10; i++) // Zwalnianie pamięci
+    delete[] pomoc [i];
+  delete [] pomoc;
+  delete [] kubelki;
+  delete [] kubelki_kopia;
 }
